@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Authorization</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link href="style.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar bg-body-tertiary navbar-expand-lg">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">
+            <img src="img/logo.jpg" alt="Logo" width="30" height="24" class="d-inline-block align-text-top">
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Переключатель навигации">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="navbar-brand" href="index.html">Payly</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="registration.html">Регистрация</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="content.html">Подписки</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<br><br><br>
+<div class="card justify-content-start pl-4">
+    <div class="display-2 m-4 card-header">Авторизация</div>
+    <form class="m-4" id="authForm">
+        <div id="authError" class="alert alert-danger d-none" role="alert"></div>
+        <div class="mb-3">
+            <label for="emailAuth" class="form-label">Адрес электронной почты</label>
+            <input type="email" class="form-control" id="emailAuth" aria-describedby="emailHelp" required >
+        </div>
+        <div class="mb-3">
+            <label for="passAuth" class="form-label">Пароль</label>
+            <input type="password" class="form-control" id="passAuth" required>
+        </div>
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="Check1" required>
+            <label class="form-check-label" for="Check1">Согласен с условиями <a href="https://docs.google.com/document/d/11qICZJR92waNmW4tAjfvv-ZagPOJxE6k33590REEy5k/edit?usp=sharing" class="link-info link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover" target="_blank">пользовательского соглашение</a></label>
+        </div>
+        <button type="submit" class="btn btn-primary">Вход</button>
+    </form>
+</div>
+
+<script src="payly.js"></script>
+<script>
+  const form = document.getElementById("authForm");
+  const errorEl = document.getElementById("authError");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    setFormError(errorEl, "");
+
+    const email = document.getElementById("emailAuth").value.trim();
+    const password = document.getElementById("passAuth").value;
+
+    try {
+      const data = await apiFetch("/login", {
+        method: "POST",
+        body: { email, password },
+      });
+      setToken(data.access_token);
+      window.location.href = "content.html";
+    } catch (err) {
+      setFormError(errorEl, err.message || "Ошибка входа");
+    }
+  });
+</script>
+</body>
+</html>
