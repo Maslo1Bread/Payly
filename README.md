@@ -74,6 +74,9 @@
    $env:GMAIL_CLIENT_SECRET="ВАШ_ТОКЕН"
    ```
 
+- Видео-инструкция по получению токенов https://youtu.be/NtBX97OfnqU
+
+
 6. `uvicorn backend.main:app --reload`
 
  - API будет на `http://127.0.0.1:8000`
