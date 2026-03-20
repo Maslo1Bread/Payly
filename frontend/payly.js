@@ -1,4 +1,4 @@
-const PAYLY_API_BASE_URL = "http://127.0.0.1:8001";
+const PAYLY_API_BASE_URL = "http://127.0.0.1:8000";
 
 function getToken() {
   return localStorage.getItem("payly_token");
@@ -30,10 +30,23 @@ async function apiFetch(path, { method = "GET", body, auth = false } = {}) {
   const data = isJson ? await res.json().catch(() => null) : null;
 
   if (!res.ok) {
-    const detail =
-      (data && (data.detail || data.message)) ||
-      `HTTP ${res.status} ${res.statusText}`;
-    const err = new Error(detail);
+    let detailText = "";
+    if (data) {
+      if (Array.isArray(data.detail)) {
+        detailText = data.detail
+          .map((d) => d && (d.msg || d.message || d.type))
+          .filter(Boolean)
+          .join("; ");
+      } else if (typeof data.detail === "string") {
+        detailText = data.detail;
+      } else if (typeof data.message === "string") {
+        detailText = data.message;
+      }
+    }
+    if (!detailText) {
+      detailText = `HTTP ${res.status} ${res.statusText}`;
+    }
+    const err = new Error(detailText);
     err.status = res.status;
     err.data = data;
     throw err;

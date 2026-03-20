@@ -33,24 +33,35 @@
 </nav>
 
 <br><br><br>
-<div class="card justify-content-start pl-4">
-    <div class="display-2 m-4 card-header">Авторизация</div>
-    <form class="m-4" id="authForm">
-        <div id="authError" class="alert alert-danger d-none" role="alert"></div>
-        <div class="mb-3">
-            <label for="emailAuth" class="form-label">Адрес электронной почты</label>
-            <input type="email" class="form-control" id="emailAuth" aria-describedby="emailHelp" required >
-        </div>
-        <div class="mb-3">
-            <label for="passAuth" class="form-label">Пароль</label>
-            <input type="password" class="form-control" id="passAuth" required>
-        </div>
-        <div class="mb-3 form-check">
-            <input type="checkbox" class="form-check-input" id="Check1" required>
-            <label class="form-check-label" for="Check1">Согласен с условиями <a href="https://docs.google.com/document/d/11qICZJR92waNmW4tAjfvv-ZagPOJxE6k33590REEy5k/edit?usp=sharing" class="link-info link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover" target="_blank">пользовательского соглашение</a></label>
-        </div>
-        <button type="submit" class="btn btn-primary">Вход</button>
-    </form>
+<div class="auth-content">
+    <div class="card auth-card justify-content-start pl-4">
+        <div class="display-2 m-4 card-header">Авторизация</div>
+        <form class="m-4" id="authForm">
+            <div id="authError" class="alert alert-danger d-none" role="alert"></div>
+            <div class="mb-3">
+                <label for="emailAuth" class="form-label">Адрес электронной почты</label>
+                <input type="email" class="form-control" id="emailAuth" aria-describedby="emailHelp" required >
+            </div>
+            <div class="mb-3">
+                <label for="passAuth" class="form-label">Пароль</label>
+                <input type="password" class="form-control" id="passAuth" required>
+            </div>
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="Check1" required>
+                <label class="form-check-label" for="Check1">Согласен с условиями <a href="https://docs.google.com/document/d/11qICZJR92waNmW4tAjfvv-ZagPOJxE6k33590REEy5k/edit?usp=sharing" class="link-info link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover" target="_blank">пользовательского соглашение</a></label>
+            </div>
+            <button type="submit" class="btn btn-primary">Вход</button>
+        </form>
+    </div>
+
+    <div class="auth-squares" aria-hidden="true">
+        <div class="auth-square" style="--x: 35%; --y: 18%; --size: 90px; --fill: rgba(121,126,147,0.18); --border: rgba(121,126,147,0.55); --dur: 7.5s; --delay: -1.2s; --start: 15deg;"></div>
+        <div class="auth-square" style="--x: 68%; --y: 12%; --size: 60px; --fill: rgba(127,204,172,0.18); --border: rgba(127,204,172,0.6); --dur: 6.2s; --delay: -2.5s; --start: 120deg;"></div>
+        <div class="auth-square" style="--x: 82%; --y: 42%; --size: 110px; --fill: rgba(121,126,147,0.14); --border: rgba(121,126,147,0.45); --dur: 9s; --delay: -3.6s; --start: 40deg;"></div>
+        <div class="auth-square" style="--x: 55%; --y: 66%; --size: 75px; --fill: rgba(127,204,172,0.14); --border: rgba(127,204,172,0.5); --dur: 8.1s; --delay: -0.7s; --start: 210deg;"></div>
+        <div class="auth-square" style="--x: 40%; --y: 58%; --size: 55px; --fill: rgba(127,204,172,0.12); --border: rgba(127,204,172,0.45); --dur: 5.6s; --delay: -1.9s; --start: 305deg;"></div>
+        <div class="auth-square" style="--x: 40%; --y: 38%; --size: 35px; --fill: rgba(121,126,147,0.16); --border: rgba(121,126,147,0.55); --dur: 4.8s; --delay: -2.2s; --start: 70deg;"></div>
+    </div>
 </div>
 
 <script src="payly.js"></script>

@@ -69,6 +69,16 @@
     const email = document.getElementById("emailAuth").value.trim();
     const password = document.getElementById("passAuth").value;
     const passwordRepeat = document.getElementById("passAuthRepeat").value;
+    const agreed = document.getElementById("Check1").checked;
+
+    if (!agreed) {
+      setFormError(errorEl, "Необходимо согласиться с условиями");
+      return;
+    }
+    if ((password || "").length < 4) {
+      setFormError(errorEl, "Пароль должен быть минимум 4 символа");
+      return;
+    }
 
     if (password !== passwordRepeat) {
       setFormError(errorEl, "Пароли не совпадают");
