@@ -1,6 +1,14 @@
 ## Backend для отслеживания подписок (FastAPI)
 
-Учебный backend-сервер для работы с пользователями и их подписками.
+Решение для отслеживания активных подписок. Добавлять можно как в ручную, так и с помощью почты.
+
+### Поддерживаемые приложения
+
+- **SoundCloud**
+- **Discord**
+- **Telegram**
+- **Yandex Plus**
+- **Boosty** (не уверен если честно :p)
 
 ### Стек
 
@@ -10,7 +18,9 @@
 - **pydantic**
 - **email-validator**
 - **cryptography**
-
+- **requests**
+- **google-auth-oauthlib**
+- **google-api-python-client**
 
 ### Структура проекта
 
@@ -24,6 +34,11 @@
   - **token_store.py**
   - **routers/auth.py**
   - **routers/subscriptions.py**
+  - **email_keyword_parser.py**
+  - **email_providers.py**
+  - **fernet_utils.py**
+  - **provider_token_store.py**
+  - **token_store.py**
 
 - **frontend/**
   - **auth.html**
@@ -46,7 +61,20 @@
 
 4. `pip install -r requirements.txt`
 
-5. `uvicorn backend.main:app --reload`
+5. Для корректной работы подстановки из gmail нужны токены client_id и client_id_secret. Получить их вы можете здесь https://console.cloud.google.com/. **ОБЯЗАТЕЛЬНО** должен быть включен GMAIL API. Для теста можно добавить себя в разрешенные пользователи, либо включить публичную версию. OAuth2 будет работать на URi которые вы указали присоздании приложения в google. Для тестов рекомендую вписывать эти:
+
+- `http://127.0.0.1:8001`
+- `http://127.0.0.1:8000/integrations/gmail/oauth/callback`
+- `http://127.0.0.1:8000/integrations/gmail/oauth/callback/`
+- `http://127.0.0.1:8000`
+
+В shell вставляете токены в формате:
+   ```bash
+   $env:GMAIL_CLIENT_ID="ВАШ_ТОКЕН"
+   $env:GMAIL_CLIENT_SECRET="ВАШ_ТОКЕН"
+   ```
+
+6. `uvicorn backend.main:app --reload`
 
  - API будет на `http://127.0.0.1:8000`
  - Swagger: `http://127.0.0.1:8000/docs`
@@ -63,14 +91,5 @@
  - Сайт будет на `http://127.0.0.1:8001`
 
 
-### Основные эндпоинты
 
-- **POST** `/register` — регистрация пользователя
-- **POST** `/login` — логин, возвращает Bearer-токен
-- **GET** `/subscriptions` — получить подписки текущего пользователя
-- **POST** `/subscriptions` — создать подписку
-- **PUT** `/subscriptions/{id}` — обновить подписку
-- **DELETE** `/subscriptions/{id}` — удалить подписку
-
-Токен из `/login` передаётся в заголовке `Authorization: Bearer <token>`.
 
