@@ -74,7 +74,7 @@
    $env:GMAIL_CLIENT_SECRET="ВАШ_ТОКЕН"
    ```
 
-- Видео-инструкция по получению токенов https://youtu.be/NtBX97OfnqU
+- Видео-инструкция по получению токенов [тык]([https://youtu.be/NtBX97OfnqU](https://youtu.be/V5tav-El5GI))
 
 
 6. `uvicorn backend.main:app --reload`
