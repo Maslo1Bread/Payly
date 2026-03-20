@@ -40,7 +40,7 @@
 
 1. **Запуск PowerShell №1**
 
-2. `cd D:\differentScripts\Payly`
+2. `pathToFolder\Payly`
 
 3. `.\.venv\Scripts\Activate.ps1`
 
@@ -56,7 +56,7 @@
 
 1. **Запуск PowerShell №2**
 
-2. `cd D:\differentScripts\Payly\frontend`
+2. `cd pathToFolder\Payly\frontend`
 
 3. `python -m http.server 8001`
 
