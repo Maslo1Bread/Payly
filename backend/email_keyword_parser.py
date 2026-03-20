@@ -254,7 +254,7 @@ def _extract_date_near_keyword(
 
 def detect_service(text: str) -> Optional[str]:
     t = (text or "").lower()
-    if "soundcloud" in t or ("go" in t or 'go+' in t):
+    if "soundcloud" in t and ("go" in t or 'go+' in t):
         return "SoundCloud Go+"
     if "boosty" in t:
         return "boosty.to"
