@@ -23,11 +23,37 @@
 
 <div class="container py-4">
   <div id="contentError" class="alert alert-danger d-none" role="alert"></div>
+  <div id="contentSuccess" class="alert alert-success d-none" role="alert"></div>
 
   <div class="d-flex align-items-center justify-content-between mb-3">
     <div>
       <div class="h3 mb-0">Подписки</div>
       <div class="text-muted" id="userEmail"></div>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <button class="btn btn-outline-secondary" id="importFromEmailBtn" type="button">
+      Подставить подписки из почты
+    </button>
+    <div class="text-muted mt-1">
+      Подключите Gmail или Mail.ru, затем импортируем данные подписок.
+    </div>
+  </div>
+
+  <div id="emailCandidatesCard" class="card mb-4 d-none">
+    <div class="card-header">Кандидаты на импорт из почты</div>
+    <div class="card-body">
+      <div id="emailCandidatesMeta" class="text-muted mb-2"></div>
+      <div id="emailCandidatesList" class="mb-3"></div>
+      <div class="d-flex gap-2">
+        <button id="emailCandidatesImportBtn" class="btn btn-primary" type="button" disabled>
+          Импортировать выбранные
+        </button>
+        <button id="emailCandidatesCancelBtn" class="btn btn-outline-secondary" type="button">
+          Скрыть
+        </button>
+      </div>
     </div>
   </div>
 
@@ -86,11 +112,26 @@
 <script src="payly.js"></script>
 <script>
   const errorEl = document.getElementById("contentError");
+  const successEl = document.getElementById("contentSuccess");
+  const importFromEmailBtn = document.getElementById("importFromEmailBtn");
+  const emailCandidatesCard = document.getElementById("emailCandidatesCard");
+  const emailCandidatesMeta = document.getElementById("emailCandidatesMeta");
+  const emailCandidatesList = document.getElementById("emailCandidatesList");
+  const emailCandidatesImportBtn = document.getElementById("emailCandidatesImportBtn");
+  const emailCandidatesCancelBtn = document.getElementById("emailCandidatesCancelBtn");
   const userEmailEl = document.getElementById("userEmail");
   const logoutBtn = document.getElementById("logoutBtn");
   const loginLink = document.getElementById("loginLink");
   const subsTbody = document.getElementById("subsTbody");
   const subsEmpty = document.getElementById("subsEmpty");
+
+  let currentEmailProvider = null;
+
+  function setSuccess(el, message) {
+    if (!el) return;
+    el.textContent = message || "";
+    el.classList.toggle("d-none", !message);
+  }
 
   function renderSubs(items) {
     subsTbody.innerHTML = "";
@@ -153,6 +194,45 @@
     renderSubs(items || []);
   }
 
+  function hideEmailCandidates() {
+    if (emailCandidatesCard) emailCandidatesCard.classList.add("d-none");
+    if (emailCandidatesList) emailCandidatesList.innerHTML = "";
+    if (emailCandidatesImportBtn) emailCandidatesImportBtn.disabled = true;
+  }
+
+  function renderEmailCandidates(provider, candidates) {
+    currentEmailProvider = provider;
+    const list = candidates || [];
+
+    emailCandidatesMeta.textContent = list.length
+      ? `Найдено кандидатов: ${list.length}. Отметьте нужные для импорта.`
+      : "Кандидаты не найдены (парсер не смог извлечь данные из писем).";
+
+    emailCandidatesList.innerHTML = "";
+
+    if (!list.length) {
+      emailCandidatesImportBtn.disabled = true;
+      return;
+    }
+
+    list.forEach((c, idx) => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "form-check";
+
+      const id = `emailCand_${idx}`;
+      wrapper.innerHTML = `
+        <input class="form-check-input" type="checkbox" name="emailCandidateKeys" value="${escapeHtml(c.candidate_key)}" id="${id}" checked />
+        <label class="form-check-label" for="${id}">
+          ${escapeHtml(c.name)} | ${Number(c.price).toFixed(2)} | ${escapeHtml(c.billing_cycle)} | ${escapeHtml(String(c.next_payment_date))}
+        </label>
+      `;
+
+      emailCandidatesList.appendChild(wrapper);
+    });
+
+    emailCandidatesImportBtn.disabled = false;
+  }
+
   document.getElementById("createSubForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     setFormError(errorEl, "");
@@ -186,8 +266,100 @@
     }
   });
 
+  importFromEmailBtn.addEventListener("click", async () => {
+    setFormError(errorEl, "");
+    setSuccess(successEl, "");
+
+    const input = window.prompt("Какой сервис использовать для подстановки подписок: gmail или mail.ru?", "gmail");
+    if (!input) return;
+
+    const raw = String(input).trim().toLowerCase();
+    let provider = null;
+    if (raw === "gmail") provider = "gmail";
+    if (raw === "mail.ru" || raw === "mailru") alert('Сервис в разработке!');
+
+    if (!provider) {
+      setFormError(errorEl, "Неверно указан сервис. Введите `gmail` или `mail.ru`.");
+      return;
+    }
+
+    try {
+      const preview = await apiFetch(`/integrations/${provider}/sync-subscriptions/preview`, { method: "POST", auth: true });
+      renderEmailCandidates(provider, preview && preview.candidates ? preview.candidates : []);
+      emailCandidatesCard.classList.remove("d-none");
+      setSuccess(successEl, "");
+    } catch (err) {
+      // Если провайдер не подключён — запускаем OAuth.
+      const msg = err.message || "";
+      if (err.status === 400 && msg.toLowerCase().includes("provider not connected")) {
+        const res = await apiFetch(`/integrations/${provider}/oauth/start`, { method: "POST", auth: true });
+        if (!res || !res.authorization_url) {
+          throw new Error("Не удалось получить URL авторизации");
+        }
+        window.location.href = res.authorization_url;
+        return;
+      }
+
+      setFormError(errorEl, err.message || "Ошибка предпросмотра импорта подписок");
+    }
+  });
+
+  emailCandidatesCancelBtn.addEventListener("click", async () => {
+    setFormError(errorEl, "");
+    setSuccess(successEl, "");
+    hideEmailCandidates();
+  });
+
+  emailCandidatesImportBtn.addEventListener("click", async () => {
+    if (!currentEmailProvider) return;
+    setFormError(errorEl, "");
+    setSuccess(successEl, "");
+
+    const checked = Array.from(document.querySelectorAll('input[name="emailCandidateKeys"]:checked'));
+    const candidate_keys = checked.map((el) => el.value);
+
+    if (!candidate_keys.length) {
+      setFormError(errorEl, "Выберите хотя бы одного кандидата.");
+      return;
+    }
+
+    try {
+      const result = await apiFetch(`/integrations/${currentEmailProvider}/sync-subscriptions/import`, {
+        method: "POST",
+        auth: true,
+        body: { candidate_keys },
+      });
+      setSuccess(successEl, `Импорт готов: создано ${result.created}, обновлено ${result.updated}.`);
+      hideEmailCandidates();
+      await loadSubs();
+    } catch (err) {
+      setFormError(errorEl, err.message || "Ошибка импорта подписок");
+    }
+  });
+
   (async () => {
     await loadMe();
+
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get("connected");
+    const provider = (params.get("provider") || "").toLowerCase();
+
+    if (connected === "1" && (provider === "gmail" || provider === "mailru")) {
+      try {
+        const preview = await apiFetch(`/integrations/${provider}/sync-subscriptions/preview`, { method: "POST", auth: true });
+        renderEmailCandidates(provider, preview && preview.candidates ? preview.candidates : []);
+        emailCandidatesCard.classList.remove("d-none");
+        setSuccess(successEl, "");
+      } catch (err) {
+        setFormError(errorEl, err.message || "Ошибка предпросмотра импорта подписок");
+      } finally {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("connected");
+        url.searchParams.delete("provider");
+        window.history.replaceState({}, "", url.toString());
+      }
+    }
+
     await loadSubs();
   })();
 </script>

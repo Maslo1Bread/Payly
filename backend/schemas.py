@@ -72,3 +72,39 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+
+# ===== Интеграции (email providers) =====
+
+
+class OAuthStartOut(BaseModel):
+    authorization_url: str
+
+
+class SyncSubscriptionsResultOut(BaseModel):
+    provider: str
+    created: int = 0
+    updated: int = 0
+    skipped: int = 0
+    # Итоговые подписки пользователя (после upsert).
+    items: List[SubscriptionOut] = []
+
+
+# ===== Preview/Import для email парсинга =====
+
+
+class SubscriptionCandidateOut(BaseModel):
+    candidate_key: str
+    name: str
+    price: float
+    billing_cycle: str
+    next_payment_date: date
+
+
+class SyncSubscriptionsPreviewResultOut(BaseModel):
+    provider: str
+    candidates: List[SubscriptionCandidateOut] = []
+
+
+class SyncSubscriptionsImportIn(BaseModel):
+    candidate_keys: List[str] = []
+

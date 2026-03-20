@@ -4,3 +4,6 @@ SQLAlchemy
 pydantic
 email-validator
 cryptography
+requests
+google-auth-oauthlib
+google-api-python-client
