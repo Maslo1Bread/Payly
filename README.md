@@ -9,6 +9,13 @@
 - **Telegram**
 - **Yandex Plus**
 - **Boosty** (не уверен если честно :p)
+- **YouTube**
+- **Spotify**
+- **Kinopoisk**
+- **IVI**
+- **Wink**
+- **VK Music**
+- **KION**
 
 ### Стек
 
@@ -57,11 +64,13 @@
 
 2. `pathToFolder\Payly`
 
-3. `.\.venv\Scripts\Activate.ps1`
+3. `python -m venv .venv`
 
-4. `pip install -r requirements.txt`
+4. `.\.venv\Scripts\Activate.ps1`
 
-5. Для корректной работы подстановки из gmail нужны токены client_id и client_id_secret. Получить их вы можете здесь https://console.cloud.google.com/. **ОБЯЗАТЕЛЬНО** должен быть включен GMAIL API. Для теста можно добавить себя в разрешенные пользователи, либо включить публичную версию. OAuth2 будет работать на URi которые вы указали присоздании приложения в google. Для тестов рекомендую вписывать эти:
+5. `pip install -r requirements.txt`
+
+Для корректной работы подстановки из gmail нужны токены client_id и client_id_secret. Получить их вы можете здесь https://console.cloud.google.com/. **ОБЯЗАТЕЛЬНО** должен быть включен GMAIL API. Для теста можно добавить себя в разрешенные пользователи, либо включить публичную версию. OAuth2 будет работать на URi которые вы указали присоздании приложения в google. Для тестов рекомендую вписывать эти:
 
 - `http://127.0.0.1:8001`
 - `http://127.0.0.1:8000/integrations/gmail/oauth/callback`
@@ -77,7 +86,7 @@
 - Видео-инструкция по получению токенов [тык](https://youtu.be/V5tav-El5GI)
 
 
-6. `uvicorn backend.main:app --reload`
+7. `uvicorn backend.main:app --reload`
 
  - API будет на `http://127.0.0.1:8000`
  - Swagger: `http://127.0.0.1:8000/docs`

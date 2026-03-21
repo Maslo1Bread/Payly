@@ -256,7 +256,7 @@ def detect_service(text: str) -> Optional[str]:
     t = (text or "").lower()
     if "soundcloud" in t and ("go" in t or 'go+' in t):
         return "SoundCloud Go+"
-    if "boosty" in t:
+    if "boosty" in t and ("подписка" in t or "подписку" in t):
         return "boosty.to"
     if "discord" in t and "nitro" in t:
         return "Discord Nitro"
@@ -264,6 +264,22 @@ def detect_service(text: str) -> Optional[str]:
         return "Telegram Premium"
     if ("яндекс" in t and "плюс" in t) or "plus.yandex.ru" in t:
         return "Yandex Plus"
+    if "kion" in t or "кион" in t:
+        return "KION"
+    if "ivi" in t or "иви" in t:
+        return "IVI"
+    if "youtube" in t and "premium" in t:
+        return "YouTube Premium"
+    if (("vkmusic" in t or "vk music" in t) or ("вкмузыка" in t or "вк музыка" in t) and ("подписка" in t or "subscription" in t)):
+        return "VK Music"
+    if "spotify" in t and "premium" in t:
+        return "Spotify Premium"
+    if ("kinopoisk" in t or "кинопоиск" in t) and ("оформлена" in t or "подключен" in t):
+        return "Кинопоиск"
+    if ("wink" in t or "винк" in t) and ("оформлена" in t or "подключен" in t):
+        return "Wink"
+    if ("netflix" in t and "members.netflix.com" in t) and ("subscription" in t or "subscribed" in t):
+        return "Spotify Premium"
     if ("pro" in t or "premium" in t) or ("plus" in t or "subscription" in t):
         return "Different (Unsupported) service"
     return None
