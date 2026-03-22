@@ -13,7 +13,7 @@ from .. import crud, schemas
 from ..auth import get_current_user
 from ..database import get_db
 from ..email_keyword_parser import normalize_service_name, parse_subscription_candidate
-from ..email_providers import GmailProvider, MailRuProvider
+from ..email_providers import GmailProvider
 from ..provider_token_store import OAuthStateStore, ProviderTokenStore
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
@@ -58,10 +58,6 @@ def _get_provider(provider: str):
         client_id = _require_env("GMAIL_CLIENT_ID")
         client_secret = _require_env("GMAIL_CLIENT_SECRET")
         return GmailProvider(client_id=client_id, client_secret=client_secret, redirect_uri=_redirect_uri(provider))
-    if provider == "mailru":
-        client_id = _require_env("MAILRU_CLIENT_ID")
-        client_secret = _require_env("MAILRU_CLIENT_SECRET")
-        return MailRuProvider(client_id=client_id, client_secret=client_secret, redirect_uri=_redirect_uri(provider))
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown provider")
 
 

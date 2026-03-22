@@ -6,11 +6,6 @@ from cryptography.fernet import Fernet, InvalidToken
 
 
 class EncryptedTokenStore:
-    """
-    Простое постоянное хранилище токенов в зашифрованном файле.
-
-    Формат данных: JSON {token: user_id}
-    """
 
     def __init__(self, key_path: Path, data_path: Path):
         self._key_path = key_path
@@ -36,7 +31,6 @@ class EncryptedTokenStore:
         try:
             decrypted = self._fernet.decrypt(raw)
         except InvalidToken:
-            # Если ключ/файл не совпадают или файл испорчен — начинаем с пустого хранилища.
             return {}
         try:
             data = json.loads(decrypted.decode("utf-8"))

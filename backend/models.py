@@ -14,7 +14,6 @@ class User(Base):
     password = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    # Связь "один-ко-многим" с подписками
     subscriptions = relationship("Subscription", back_populates="user", cascade="all, delete-orphan")
 
 

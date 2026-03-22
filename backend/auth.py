@@ -20,9 +20,6 @@ security_scheme = HTTPBearer(auto_error=False)
 def get_bearer_token(
     credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
 ) -> str:
-    """
-    Достаёт bearer-токен из заголовка Authorization.
-    """
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -32,18 +29,12 @@ def get_bearer_token(
 
 
 def create_access_token(user_id: int) -> str:
-    """
-    Генерирует простой случайный токен и сохраняет его постоянно (в зашифрованном файле).
-    """
     token = secrets.token_hex(32)
     TOKENS.set_token(token, user_id)
     return token
 
 
 def revoke_token(token: str) -> None:
-    """
-    Инвалидирует токен (удаляет из постоянного хранилища).
-    """
     TOKENS.revoke(token)
 
 

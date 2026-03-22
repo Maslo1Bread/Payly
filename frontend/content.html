@@ -316,7 +316,6 @@
       emailCandidatesCard.classList.remove("d-none");
       setSuccess(successEl, "");
     } catch (err) {
-      // Если провайдер не подключён — запускаем OAuth.
       const msg = err.message || "";
       if (err.status === 400 && msg.toLowerCase().includes("provider not connected")) {
         const res = await apiFetch(`/integrations/${provider}/oauth/start`, { method: "POST", auth: true });

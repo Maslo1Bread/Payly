@@ -24,7 +24,6 @@ class EmailMessage:
 def _strip_html(html: str) -> str:
     if not html:
         return ""
-    # Простой stripping без внешних зависимостей.
     return re.sub(r"<[^>]+>", " ", html)
 
 
@@ -52,7 +51,6 @@ def _get_text_from_email_message(msg: Message) -> str:
         if html_text:
             return _strip_html(html_text)
         return ""
-    # non-multipart
     payload = msg.get_payload(decode=True)
     if payload is None:
         return msg.get_payload() or ""
@@ -67,7 +65,6 @@ class GmailProvider:
     provider = "gmail"
 
     def __init__(self, client_id: str, client_secret: str, redirect_uri: str):
-        # Lazy imports: чтобы не падать при импорте модуля без зависимостей.
         from google.auth.transport.requests import Request  # noqa: F401
 
         self._client_id = client_id
@@ -95,11 +92,7 @@ class GmailProvider:
             state=state,
             redirect_uri=self._redirect_uri,
             code_verifier=code_verifier,
-            # Если передали code_verifier, то PKCE уже будет корректно верифицирован.
-            # Если не передали — библиотека может не сгенерировать его, поэтому предпочитаем
-            # всегда передавать code_verifier со стороны backend.
         )
-        # access_type=offline -> refresh_token
         auth_url, _ = flow.authorization_url(
             access_type="offline",
             include_granted_scopes="true",
@@ -155,7 +148,6 @@ class GmailProvider:
         q = ""
         if last_synced_at:
             after_date = (last_synced_at.date()).strftime("%Y/%m/%d")
-            # "after:" использует дату (UTC) без времени; для надежности обычно уходит 1 день.
             q = f"after:{after_date}"
 
         res = (
@@ -178,12 +170,10 @@ class GmailProvider:
             data = body.get("data")
             if mime == "text/plain" and data:
                 return decode_body_b64url(data)
-            # рекурсивно по part'ам
             for part in payload.get("parts") or []:
                 val = extract_from_payload(part)
                 if val:
                     return val
-            # fallback на text/html
             for part in payload.get("parts") or []:
                 if part.get("mimeType") == "text/html":
                     pdata = (part.get("body") or {}).get("data")
@@ -220,139 +210,3 @@ class GmailProvider:
                 body_text=body_text,
                 internal_date=internal_date,
             )
-
-
-class MailRuProvider:
-    provider = "mailru"
-
-    def __init__(self, client_id: str, client_secret: str, redirect_uri: str):
-        self._client_id = client_id
-        self._client_secret = client_secret
-        self._redirect_uri = redirect_uri
-
-    @staticmethod
-    def scope() -> str:
-        # Для чтения IMAP через OAuth2 обычно достаточно mail.imap.
-        return "mail.imap userinfo"
-
-    def build_authorization_url(self, state: str) -> str:
-        base = "https://o2.mail.ru/login"
-        params = {
-            "response_type": "code",
-            "client_id": self._client_id,
-            "redirect_uri": self._redirect_uri,
-            "scope": self.scope(),
-            "state": state,
-        }
-        # Формируем URL вручную, чтобы не зависеть от urllib.
-        parts = [f"{k}={requests.utils.quote(str(v), safe='')}" for k, v in params.items()]
-        return f"{base}?{'&'.join(parts)}"
-
-    def exchange_code_for_refresh_token(self, code: str, code_verifier: Optional[str] = None) -> str:
-        _ = code_verifier  # Mail.ru не использует PKCE в этом коде
-        url = "https://o2.mail.ru/token"
-        data = {
-            "grant_type": "authorization_code",
-            "code": code,
-            "redirect_uri": self._redirect_uri,
-            "client_id": self._client_id,
-            "client_secret": self._client_secret,
-        }
-        r = requests.post(url, data=data, timeout=30)
-        r.raise_for_status()
-        payload = r.json()
-        refresh_token = payload.get("refresh_token")
-        if not refresh_token:
-            raise RuntimeError("Mail.ru: refresh_token not returned")
-        return refresh_token
-
-    def refresh_access_token(self, refresh_token: str) -> str:
-        url = "https://appsmail.ru/oauth/token"
-        data = {
-            "grant_type": "refresh_token",
-            "client_id": self._client_id,
-            "client_secret": self._client_secret,
-            "refresh_token": refresh_token,
-        }
-        r = requests.post(url, data=data, timeout=30)
-        r.raise_for_status()
-        payload = r.json()
-        access_token = payload.get("access_token")
-        if not access_token:
-            raise RuntimeError("Mail.ru: access_token not returned")
-        return access_token
-
-    def list_messages(
-        self,
-        user_email: str,
-        refresh_token: str,
-        last_synced_at: Optional[datetime],
-        limit: int,
-    ) -> Iterable[EmailMessage]:
-        access_token = self.refresh_access_token(refresh_token)
-
-        imap = imaplib.IMAP4_SSL("imap.mail.ru", 993)
-
-        auth_string = f"user={user_email}\x01auth=Bearer {access_token}\x01\x01"
-
-        def auth_func(_: bytes) -> bytes:
-            return base64.b64encode(auth_string.encode("utf-8"))
-
-        imap.authenticate("XOAUTH2", auth_func)
-        imap.select("INBOX")
-
-        # SINCE использует формат типа: 17-Sep-2025 (UTC не гарантируется, но достаточно для sync)
-        if last_synced_at:
-            since_str = last_synced_at.strftime("%d-%b-%Y")
-            status, data = imap.search(None, "SINCE", since_str)
-        else:
-            status, data = imap.search(None, "ALL")
-
-        if status != "OK":
-            imap.logout()
-            return []
-
-        ids = (data[0] or b"").split()
-        if not ids:
-            imap.logout()
-            return []
-
-        # Берем последние limit писем.
-        ids_to_fetch = ids[-limit:]
-
-        out: list[EmailMessage] = []
-        for msg_id in ids_to_fetch:
-            msg_id_str = msg_id.decode("utf-8") if isinstance(msg_id, (bytes, bytearray)) else str(msg_id)
-            status, msg_data = imap.fetch(msg_id, "(RFC822)")
-            if status != "OK" or not msg_data:
-                continue
-            raw_bytes = None
-            for part in msg_data:
-                if isinstance(part, tuple) and part[1]:
-                    raw_bytes = part[1]
-                    break
-            if not raw_bytes:
-                continue
-            msg = message_from_bytes(raw_bytes)
-            subject = msg.get("Subject") or ""
-            # Date header (если не удается — fallback)
-            internal_date = datetime.utcnow()
-            try:
-                dt = parsedate_to_datetime(msg.get("Date") or "")
-                if dt:
-                    internal_date = dt.replace(tzinfo=None) if getattr(dt, "tzinfo", None) else dt
-            except Exception:
-                pass
-            body_text = _get_text_from_email_message(msg)
-            out.append(
-                EmailMessage(
-                    message_id=msg_id_str,
-                    subject=subject,
-                    body_text=body_text,
-                    internal_date=internal_date,
-                )
-            )
-
-        imap.logout()
-        return out
-

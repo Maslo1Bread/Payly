@@ -4,8 +4,6 @@ from typing import Optional, List
 from pydantic import BaseModel, EmailStr, Field
 
 
-# ===== Схемы пользователей =====
-
 
 class UserBase(BaseModel):
     email: EmailStr = Field(..., description="Email пользователя")
@@ -27,8 +25,6 @@ class UserOut(UserBase):
         from_attributes = True
 
 
-# ===== Схемы подписок =====
-
 
 class SubscriptionBase(BaseModel):
     name: str = Field(..., description="Название сервиса")
@@ -42,9 +38,6 @@ class SubscriptionCreate(SubscriptionBase):
 
 
 class SubscriptionUpdate(BaseModel):
-    """
-    Обновление подписки — все поля опциональны.
-    """
 
     name: Optional[str] = None
     price: Optional[float] = Field(None, ge=0)
@@ -65,15 +58,11 @@ class SubscriptionsList(BaseModel):
     items: List[SubscriptionOut]
 
 
-# ===== Схемы для auth токена =====
-
 
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
-
-# ===== Интеграции (email providers) =====
 
 
 class OAuthStartOut(BaseModel):
@@ -85,11 +74,8 @@ class SyncSubscriptionsResultOut(BaseModel):
     created: int = 0
     updated: int = 0
     skipped: int = 0
-    # Итоговые подписки пользователя (после upsert).
     items: List[SubscriptionOut] = []
 
-
-# ===== Preview/Import для email парсинга =====
 
 
 class SubscriptionCandidateOut(BaseModel):

@@ -52,9 +52,6 @@ def get_user_by_email(db: Session, email: str) -> Optional[models.User]:
 
 
 def create_user(db: Session, user_in: schemas.UserCreate) -> models.User:
-    """
-    Создание пользователя.
-    """
     password_hash = _hash_password(user_in.password)
     user = models.User(email=user_in.email, password=password_hash)
     db.add(user)
@@ -64,9 +61,6 @@ def create_user(db: Session, user_in: schemas.UserCreate) -> models.User:
 
 
 def authenticate_user(db: Session, email: str, password: str) -> Optional[models.User]:
-    """
-    Примитивная проверка логина и пароля.
-    """
     user = get_user_by_email(db, email=email)
     if not user:
         return None

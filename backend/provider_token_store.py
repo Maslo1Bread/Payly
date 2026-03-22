@@ -16,11 +16,7 @@ class ProviderTokenRecord:
 
 
 class ProviderTokenStore:
-    """
-    Хранилище refresh_token (в зашифрованном файле) и last_synced_at.
-
-    Это упрощение под текущий учебный проект: не добавляем таблицы в БД.
-    """
+    # Хранилище refresh_token (в зашифрованном файле) и last_synced_at.
 
     def __init__(self, key_path: Path, data_path: Path):
         self._key_path = key_path
@@ -83,9 +79,7 @@ class ProviderTokenStore:
 
 
 class OAuthStateStore:
-    """
-    Хранилище OAuth state (CSRF) в зашифрованном файле.
-    """
+    # Хранилище OAuth state (CSRF) в зашифрованном файле.
 
     def __init__(self, key_path: Path, data_path: Path):
         self._key_path = key_path

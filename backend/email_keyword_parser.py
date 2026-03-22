@@ -12,7 +12,7 @@ from typing import Optional
 class SubscriptionCandidate:
     name: str
     price: float
-    billing_cycle: str  # "monthly" | "yearly"
+    billing_cycle: str
     next_payment_date: date
 
 
@@ -64,7 +64,6 @@ json_file_path = script_dir / 'supported_services.json'
 
 
 def load_data():
-    """Загружает данные из JSON-файла один раз."""
     with json_file_path.open('r', encoding='utf-8') as f:
         data = json.load(f)
     return data['service'], data['addWord']
@@ -83,7 +82,6 @@ def _parse_amount(amount_str: str) -> Optional[float]:
     if not s:
         return None
 
-    # Учитываем десятичный разделитель: последний из '.' или ',' считаем десятичным.
     last_dot = s.rfind(".")
     last_comma = s.rfind(",")
     if last_dot == -1 and last_comma == -1:
@@ -109,9 +107,6 @@ def _parse_amount(amount_str: str) -> Optional[float]:
 
 
 def extract_price(text: str) -> Optional[float]:
-    """
-    Ищет первое число, похожее на сумму, рядом с валютой/символом.
-    """
     t = text or ""
 
     # Символы/слова валют.
@@ -135,7 +130,6 @@ def extract_price(text: str) -> Optional[float]:
         if m:
             return _parse_amount(m.group(1))
 
-    # Фолбэк: ищем "Итого" и ближайшую сумму.
     m = re.search(r"\bИтого\b.*?([0-9][0-9.,\s]*)", t, flags=re.IGNORECASE | re.DOTALL)
     if m:
         return _parse_amount(m.group(1))
@@ -149,15 +143,12 @@ def extract_billing_cycle(text: str) -> str:
         return "yearly"
     if any(k in t for k in ["monthly", "per month", "в месяц", "once per month", "месяц", "month"]):
         return "monthly"
-    # По умолчанию — monthly (лучше для UX, т.к. иначе next_payment_date не восстановить).
     return "monthly"
 
 
 def _add_months(d: date, months: int) -> date:
-    # Простейшее добавление месяцев с учетом конца месяца.
     y = d.year + (d.month - 1 + months) // 12
     m = (d.month - 1 + months) % 12 + 1
-    # Последний день нового месяца.
     first_next_month = date(y, m, 1) + timedelta(days=32)
     last_day = date(first_next_month.year, first_next_month.month, 1) - timedelta(days=1)
     return date(y, m, min(d.day, last_day.day))
@@ -168,7 +159,6 @@ def add_cycle(d: date, billing_cycle: str) -> date:
         try:
             return date(d.year + 1, d.month, d.day)
         except ValueError:
-            # 29 февраля -> 28 февраля/конец.
             return date(d.year + 1, d.month, 28)
     return _add_months(d, 1)
 
@@ -186,7 +176,6 @@ def _parse_rus_date(match: re.Match) -> Optional[date]:
         year = None
     try:
         if year is None:
-            # год нужно подставлять извне
             return date(2000, month, day)
         return date(year, month, day)
     except Exception:
@@ -202,7 +191,6 @@ def _parse_any_date(text: str, default_year: int) -> Optional[date]:
         y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
         return date(y, mo, d)
 
-    # dd.mm.yy or dd.mm.yyyy
     m = re.search(r"\b(\d{1,2})\.(\d{1,2})\.(\d{2,4})\b", t)
     if m:
         d = int(m.group(1))
@@ -217,7 +205,6 @@ def _parse_any_date(text: str, default_year: int) -> Optional[date]:
         t,
         flags=re.IGNORECASE,
     )
-    # Выше потенциально слишком общий паттерн; используем отдельный более надежный:
     m2 = re.search(
         r"\b(?P<day>\d{1,2})\s+(?P<month>января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря|янв\.|февр\.|апр\.|авг\.|сент\.|окт\.|нояб\.|дек\.)\s*(?P<year>\d{4})?\b",
         t,
@@ -231,7 +218,6 @@ def _parse_any_date(text: str, default_year: int) -> Optional[date]:
                 return d0
             return date(default_year, d0.month, d0.day)
 
-    # Apr 4, 2026
     m3 = re.search(
         r"\b(?P<month>Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.?\s+(?P<day>\d{1,2})(?:,\s*)?(?P<year>\d{4})\b",
         t,
@@ -251,31 +237,26 @@ def _extract_date_near_keyword(
         keyword_pattern: str,
         default_year: int,
 ) -> Optional[date]:
-    """
-    Ищет первое вхождение keyword_pattern и пытается распарсить дату на небольшом окне после него.
-    """
     if not text:
         return None
     m = re.search(keyword_pattern, text, flags=re.IGNORECASE | re.DOTALL)
     if not m:
         return None
     window = text[m.end(): m.end() + 80]
-    # Иногда дата идет дальше/с символами — пробуем распарсить прямо из окна.
     d = _parse_any_date(window, default_year=default_year)
     if d:
         return d
-    # fallback: еще раз пробуем на более широком окне
     window2 = text[m.end(): m.end() + 200]
     return _parse_any_date(window2, default_year=default_year)
 
 
 def detect_service(text: str):
-    t = (text or "").lower().split()  # Разбиваем на слова
+    t = (text or "").lower().split()
     services, addwords = load_data()
     found_service = []
 
     for service in services:
-        if service in t:  # Точное совпадение слова
+        if service in t:
             for word in addwords:
                 if word in t:
                     found_service.append(service)
@@ -304,25 +285,21 @@ def parse_subscription_candidate(
     billing_cycle = extract_billing_cycle(combined)
 
     default_year = received_at.year
-    # Пытаемся отличить next/end от даты платежа.
     next_date = None
     payment_date = None
 
-    # SoundCloud / англоязычные письма: рядом с auto-renews / billed on.
     next_date = _extract_date_near_keyword(
         combined,
         r"(auto-?renews\s+on|billed\s+for.*?\s+on|will\s+convert.*?\s+on)\s+",
         default_year=default_year,
     )
 
-    # Discord: "Дата платежа: 30 нояб. 2023 г., ..."
     payment_date = _extract_date_near_keyword(
         combined,
         r"(Дата\s+платежа|Дата\s+платежа:|Payment\s+Date|Дата\s+платежа\s*:)[:\s]*",
         default_year=default_year,
     )
 
-    # Boosty / списания: "Списание денег ... Дата и время ..."
     if payment_date is None:
         payment_date = _extract_date_near_keyword(
             combined,
@@ -330,7 +307,6 @@ def parse_subscription_candidate(
             default_year=default_year,
         )
 
-    # Яндекс чек: обычно есть строка "Смена ... 17.09.25 ..."
     if payment_date is None and service == "Yandex Plus":
         payment_date = _extract_date_near_keyword(
             combined,
@@ -343,7 +319,6 @@ def parse_subscription_candidate(
     elif payment_date:
         next_payment_date = add_cycle(payment_date, billing_cycle)
     else:
-        # Политика, согласованная вами: если next/end не нашли — берем received_at + цикл.
         next_payment_date = add_cycle(received_at.date(), billing_cycle)
 
     return SubscriptionCandidate(

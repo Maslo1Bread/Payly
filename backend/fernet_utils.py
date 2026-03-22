@@ -21,9 +21,6 @@ def get_fernet(key_path: Path) -> Fernet:
 
 
 def encrypt_json(payload: Any, key_path: Path) -> bytes:
-    """
-    Шифрует JSON-данные целиком (удобно для простых file-based хранилищ).
-    """
     fernet = get_fernet(key_path)
     raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     return fernet.encrypt(raw)

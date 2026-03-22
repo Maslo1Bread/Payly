@@ -10,11 +10,6 @@ router = APIRouter(tags=["auth"])
 
 @router.post("/register", response_model=schemas.UserOut, status_code=status.HTTP_201_CREATED)
 def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
-    """
-    Регистрация нового пользователя.
-
-    Возвращает данные пользователя без пароля.
-    """
     existing_user = crud.get_user_by_email(db, user_in.email)
     if existing_user:
         raise HTTPException(
@@ -28,12 +23,6 @@ def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=schemas.Token)
 def login(user_in: schemas.UserLogin, db: Session = Depends(get_db)):
-    """
-    Логин пользователя.
-
-    При успешной аутентификации возвращает Bearer-токен,
-    который нужно передавать в заголовке Authorization.
-    """
     user = crud.authenticate_user(db, email=user_in.email, password=user_in.password)
     if not user:
         raise HTTPException(
@@ -47,16 +36,10 @@ def login(user_in: schemas.UserLogin, db: Session = Depends(get_db)):
 
 @router.get("/me", response_model=schemas.UserOut)
 def me(current_user=Depends(get_current_user)):
-    """
-    Проверка авторизации: возвращает текущего пользователя.
-    """
     return current_user
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(token: str = Depends(get_bearer_token)):
-    """
-    Выход: инвалидирует текущий bearer-токен.
-    """
     revoke_token(token)
     return None

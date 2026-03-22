@@ -15,9 +15,6 @@ def list_subscriptions(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """
-    Получить все подписки текущего пользователя.
-    """
     subs = crud.get_subscriptions_for_user(db, user_id=current_user.id)
     return subs
 
@@ -28,9 +25,6 @@ def create_subscription(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """
-    Создать новую подписку для текущего пользователя.
-    """
     subscription = crud.create_subscription(db, user_id=current_user.id, subscription_in=subscription_in)
     return subscription
 
@@ -42,9 +36,6 @@ def update_subscription(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """
-    Обновить существующую подписку текущего пользователя.
-    """
     updated = crud.update_subscription_for_user(
         db, subscription_id=subscription_id, user_id=current_user.id, subscription_in=subscription_in
     )
@@ -59,9 +50,6 @@ def delete_subscription(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """
-    Удалить подписку текущего пользователя.
-    """
     ok = crud.delete_subscription_for_user(db, subscription_id=subscription_id, user_id=current_user.id)
     if not ok:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found")
