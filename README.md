@@ -31,7 +31,7 @@
 
 1. **Запуск PowerShell №1**
 
-2. `pathToFolder\Payly`
+2. `cd pathToFolder\Payly`
 
 3. `python -m venv .venv`
 
