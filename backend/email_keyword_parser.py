@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import re
+import json
+from pathlib import Path
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Optional
@@ -57,6 +59,16 @@ ENG_MONTHS = {
     "dec": 12,
 }
 
+script_dir = Path(__file__).parent
+json_file_path = script_dir / 'supported_services.json'
+
+
+def load_data():
+    """Загружает данные из JSON-файла один раз."""
+    with json_file_path.open('r', encoding='utf-8') as f:
+        data = json.load(f)
+    return data['service'], data['addWord']
+
 
 def normalize_service_name(name: str) -> str:
     s = str(name).lower().strip()
@@ -104,14 +116,19 @@ def extract_price(text: str) -> Optional[float]:
 
     # Символы/слова валют.
     patterns = [
-        r"€\s*([0-9][0-9.,\s]*)",
-        r"₽\s*([0-9][0-9.,\s]*)",
-        r"\$\s*([0-9][0-9.,\s]*)",
-        r"£\s*([0-9][0-9.,\s]*)",
-        # Число + код валюты (например 5 849,99 ARS)
-        r"([0-9][0-9.,\s]*)\s*(ARS|RUB|EUR|USD|GBP|KZT)\b",
-        # Число + слово валюты (например 299.00 rubles per month)
-        r"([0-9][0-9.,\s]*)\s*(rubles|ruble|roubles|руб|руб\.|рублей|рубли)\b",
+        # Валюта перед числом (€ 200, ₽ 199.99, $ 500 и т. д.)
+        r"€\s*([0-9][0-9.,\s]*[0-9])",
+        r"₽\s*([0-9][0-9.,\s]*[0-9])",
+        r"\$\s*([0-9][0-9.,\s]*[0-9])",  # $ экранирован
+        r"£\s*([0-9][0-9.,\s]*[0-9])",
+
+        # Число + валюта (200$, 199.99 ₽, 500 EUR и т. д.)
+        r"(\d+(?:[.,]\d+)?)\s*($|₽|€|£|₴|₸)",  # валюта после числа
+        r"(\d+(?:[.,]\d+)?)\s*(ARS|RUB|EUR|USD|GBP|KZT|TRY)\b",
+        r"\w(ARS|RUB|EUR|USD|GBP|KZT|TRY)\s*(\d+(?:[.,]\d+)?)",
+
+        # Число + словесное обозначение валюты
+        r"(\d+(?:[.,]\d+)?)\s*(rubles|ruble|roubles|руб|руб\.|рублей|рубли|dollar|dollars|euro|euros)\b"
     ]
     for pat in patterns:
         m = re.search(pat, t, flags=re.IGNORECASE)
@@ -128,9 +145,9 @@ def extract_price(text: str) -> Optional[float]:
 
 def extract_billing_cycle(text: str) -> str:
     t = (text or "").lower()
-    if any(k in t for k in ["yearly", "per year", "в год", "/год", "год ", "nitro yearly", "once per year", "годly"]):
+    if any(k in t for k in ["yearly", "per year", "в год", "/год", "год ", "nitro yearly", "once per year", "годly", "year"]):
         return "yearly"
-    if any(k in t for k in ["monthly", "per month", "в месяц", "once per month", "месяц"]):
+    if any(k in t for k in ["monthly", "per month", "в месяц", "once per month", "месяц", "month"]):
         return "monthly"
     # По умолчанию — monthly (лучше для UX, т.к. иначе next_payment_date не восстановить).
     return "monthly"
@@ -230,9 +247,9 @@ def _parse_any_date(text: str, default_year: int) -> Optional[date]:
 
 
 def _extract_date_near_keyword(
-    text: str,
-    keyword_pattern: str,
-    default_year: int,
+        text: str,
+        keyword_pattern: str,
+        default_year: int,
 ) -> Optional[date]:
     """
     Ищет первое вхождение keyword_pattern и пытается распарсить дату на небольшом окне после него.
@@ -242,53 +259,38 @@ def _extract_date_near_keyword(
     m = re.search(keyword_pattern, text, flags=re.IGNORECASE | re.DOTALL)
     if not m:
         return None
-    window = text[m.end() : m.end() + 80]
+    window = text[m.end(): m.end() + 80]
     # Иногда дата идет дальше/с символами — пробуем распарсить прямо из окна.
     d = _parse_any_date(window, default_year=default_year)
     if d:
         return d
     # fallback: еще раз пробуем на более широком окне
-    window2 = text[m.end() : m.end() + 200]
+    window2 = text[m.end(): m.end() + 200]
     return _parse_any_date(window2, default_year=default_year)
 
 
-def detect_service(text: str) -> Optional[str]:
-    t = (text or "").lower()
-    if "soundcloud" in t and ("go" in t or 'go+' in t):
-        return "SoundCloud Go+"
-    if "boosty" in t and ("подписка" in t or "подписку" in t):
-        return "boosty.to"
-    if "discord" in t and "nitro" in t:
-        return "Discord Nitro"
-    if "telegram premium" in t or ("telegram" in t and "premium" in t):
-        return "Telegram Premium"
-    if ("яндекс" in t and "плюс" in t) or "plus.yandex.ru" in t:
-        return "Yandex Plus"
-    if "kion" in t or "кион" in t:
-        return "KION"
-    if "ivi" in t or "иви" in t:
-        return "IVI"
-    if "youtube" in t and "premium" in t:
-        return "YouTube Premium"
-    if (("vkmusic" in t or "vk music" in t) or ("вкмузыка" in t or "вк музыка" in t) and ("подписка" in t or "subscription" in t)):
-        return "VK Music"
-    if "spotify" in t and "premium" in t:
-        return "Spotify Premium"
-    if ("kinopoisk" in t or "кинопоиск" in t) and ("оформлена" in t or "подключен" in t):
-        return "Кинопоиск"
-    if ("wink" in t or "винк" in t) and ("оформлена" in t or "подключен" in t):
-        return "Wink"
-    if ("netflix" in t and "members.netflix.com" in t) and ("subscription" in t or "subscribed" in t):
-        return "Spotify Premium"
-    if ("pro" in t or "premium" in t) or ("plus" in t or "subscription" in t):
-        return "Different (Unsupported) service"
-    return None
+def detect_service(text: str):
+    t = (text or "").lower().split()  # Разбиваем на слова
+    services, addwords = load_data()
+    found_service = []
+
+    for service in services:
+        if service in t:  # Точное совпадение слова
+            for word in addwords:
+                if word in t:
+                    found_service.append(service)
+                    break
+
+    if found_service:
+        return f"{found_service[0]}".title()
+    else:
+        return None
 
 
 def parse_subscription_candidate(
-    subject: str,
-    text: str,
-    received_at: datetime,
+        subject: str,
+        text: str,
+        received_at: datetime,
 ) -> Optional[SubscriptionCandidate]:
     combined = f"{subject}\n{text}".strip()
     service = detect_service(combined)
@@ -350,4 +352,3 @@ def parse_subscription_candidate(
         billing_cycle=billing_cycle,
         next_payment_date=next_payment_date,
     )
-
