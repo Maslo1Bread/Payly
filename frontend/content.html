@@ -63,7 +63,7 @@
       Подставить подписки из почты
     </button>
     <div class="gmailtext">
-      Подключите Gmail или Mail.ru, затем импортируем данные подписок.
+      Подключите Gmail, затем импортируем данные подписок.
     </div>
   </div>
   </div>
@@ -297,7 +297,7 @@
     setFormError(errorEl, "");
     setSuccess(successEl, "");
 
-    const input = window.prompt("Какой сервис использовать для подстановки подписок: gmail или mail.ru?", "gmail");
+    const input = window.prompt("Какой сервис использовать для подстановки подписок: gmail или mail.ru (НЕДОСТУПЕН)?", "gmail");
     if (!input) return;
 
     const raw = String(input).trim().toLowerCase();
@@ -306,7 +306,7 @@
     if (raw === "mail.ru" || raw === "mailru") alert('Сервис в разработке!');
 
     if (!provider) {
-      setFormError(errorEl, "Неверно указан сервис. Введите `gmail` или `mail.ru`.");
+      setFormError(errorEl, "Неверно указан сервис. Введите `gmail`.");
       return;
     }
 
