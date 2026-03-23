@@ -44,6 +44,10 @@ def _redirect_uri(provider: str) -> str:
 
 def _require_env(name: str) -> str:
     val = os.getenv(name)
+    # Частая проблема при ручном вводе в PowerShell: значение с пробелами
+    # или с обрамляющими кавычками.
+    if val is not None:
+        val = val.strip().strip("\"'")
     if not val:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -112,6 +116,17 @@ def oauth_callback(
     try:
         refresh_token = p.exchange_code_for_refresh_token(code=code, code_verifier=code_verifier)
     except Exception as e:
+        err = str(e)
+        if provider == "gmail" and "invalid_client" in err.lower():
+            expected_redirect = _redirect_uri(provider)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Token exchange failed: (invalid_client) Unauthorized. "
+                    "Проверьте GMAIL_CLIENT_ID/GMAIL_CLIENT_SECRET, что OAuth client type = Web application "
+                    f"и что в Google Cloud добавлен точный Authorized redirect URI: {expected_redirect}"
+                ),
+            )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Token exchange failed: {e}")
 
     _PROVIDER_TOKEN_STORE.set_refresh_token(user_id=int(user_id), provider=provider, refresh_token=refresh_token)
