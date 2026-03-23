@@ -2,6 +2,8 @@
 
 ### Решение для отслеживания активных подписок. Добавлять можно как в ручную, так и с помощью почты.
 
+- **Google Drive (все инструкции, видео презентации тут):** [тык](https://drive.google.com/drive/folders/1advKi-zsVs2Q4mJ5CVGvBZx9_jBNj6Wf?usp=sharing)
+
 
 ***
 
@@ -74,10 +76,16 @@
 __***Все вышеуказанное было сделано и протестированно в PowerShell 7***__
 
 
+### Mobile Android
+
+Ссылка на Android Branch
+- https://github.com/Maslo1Bread/Payly/tree/main
+
+
 ***
 
 
-### Зависимости
+### Зависимости (web и backend)
 
 - **fastapi**
 - **uvicorn**
